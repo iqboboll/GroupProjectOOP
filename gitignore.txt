@@ -1,0 +1,34 @@
+# --- Build Outputs ---
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+
+# --- IDE Specific (Visual Studio / VS Code) ---
+.vs/
+.vscode/
+*.user
+*.userosscache
+*.sln.docstates
+
+# --- MSBuild / Project files ---
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.cache
+*.dbmdl
+
+# --- NuGet Packages ---
+# If you use a packages folder for NuGet
+packages/
+*.nupkg
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db
+
+# --- User-specific files ---
+*.rsuser
+*.suo
+*.user
+*.userosscache

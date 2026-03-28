@@ -1,0 +1,8 @@
+// Program that are actually working with the abstract class is on top
+// The program class is on the bottom of code
+// IMPORTANT: cannot be run on a folder that contain Main() in a C# file, must create separate folder then open through vscode
+// still in early stage, need lot of improvement.
+// 14-2-2026, 1:51 a.m, Added NOR choice to the code,
+// (cont.) 1. add public class (just copy paste) above the end of inheritance
+// 2. add choice into the .Addchoice (use ctrl + f)
+// 3. add new list in the InitializeLevel() 
