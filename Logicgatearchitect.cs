@@ -4,17 +4,38 @@ using Spectre.Console;
 
 // --- Supporting Classes at the Top ---
 
-public abstract class LogicGate
+abstract class LogicGate
 {
+    private string gateName = "";
+    private int NumberOfInputs;
+    private bool[] inputs = new bool[2];
+    private bool output;
+
+    public void SetInput(int index, bool value)
+    {
+        if (index >= 0 && index < inputs.Length)
+            inputs[index] = value;
+    }
+
+    public bool GetOutput()
+    {
+        return output;
+    }
+
+    public string GetName()
+    {
+        return gateName;
+    }
+
     public abstract bool Evaluate(bool inputA, bool inputB);
 }
 
 // Starting of inheritance 
 
-public class AndGate : LogicGate
+class AndGate : LogicGate
 {
     public override bool Evaluate(bool inputA, bool inputB)
-    { 
+    {
         return inputA && inputB;
     }
     public override string ToString()
@@ -23,10 +44,10 @@ public class AndGate : LogicGate
     }
 }
 
-public class OrGate : LogicGate
+class OrGate : LogicGate
 {
     public override bool Evaluate(bool inputA, bool inputB)
-    { 
+    {
         return inputA || inputB;
     }
     public override string ToString()
@@ -35,7 +56,7 @@ public class OrGate : LogicGate
     }
 }
 
-public class XorGate : LogicGate
+class XorGate : LogicGate
 {
     public override bool Evaluate(bool inputA, bool inputB)
     {
@@ -47,7 +68,7 @@ public class XorGate : LogicGate
     }
 }
 
-public class NandGate : LogicGate
+class NandGate : LogicGate
 {
     public override bool Evaluate(bool inputA, bool inputB)
     {
@@ -59,7 +80,7 @@ public class NandGate : LogicGate
     }
 }
 
-public class NorGate : LogicGate
+class NorGate : LogicGate
 {
     public override bool Evaluate(bool inputA, bool inputB)
     {
@@ -73,7 +94,7 @@ public class NorGate : LogicGate
 
 // End of inheritance, start of class level
 
-public class Level
+class Level
 {
     public int LevelNumber { get; set; }
     public string GateName { get; set; }
@@ -112,12 +133,17 @@ public class Level
 
 //end of class level, start of user's class
 
-public class User
+class User
 {
     public string Name { get; set; }
     public int Score { get; set; }
     public int CurrentLevelIndex { get; set; }
     public int RemainingAttempts { get; set; }
+    public List<Item> Inventory { get; set; }
+
+    public bool IsFiftyFiftyActive { get; set; }
+    public bool IsDoublePointsActive { get; set; }
+    public bool IsHintActive { get; set; }
 
     public User(string name)
     {
@@ -125,60 +151,172 @@ public class User
         Score = 0;
         CurrentLevelIndex = 0;
         RemainingAttempts = 3;
+        Inventory = new List<Item>();
+    }
+
+    public void AddScore(int points)
+    {
+        if (IsDoublePointsActive)
+        {
+            points *= 2;
+            IsDoublePointsActive = false;
+        }
+        Score += points;
+    }
+
+    public void DecreaseAttempt()
+    {
+        RemainingAttempts--;
+    }
+
+    public void NextLevel()
+    {
+        CurrentLevelIndex++;
+    }
+
+    public bool IsGameOver()
+    {
+        return RemainingAttempts <= 0;
+    }
+
+    public void AddItem(Item item)
+    {
+        Inventory.Add(item);
+    }
+
+    public void UseItem(Item item)
+    {
+        item.Use(this);
+        Inventory.Remove(item);
+    }
+}
+
+abstract class Item
+{
+    protected string itemName = "";
+    protected string description = "";
+
+    public string ItemName { get => itemName; set => itemName = value; }
+    public string Description { get => description; set => description = value; }
+
+    public abstract void Use(User player);
+}
+
+class FiftyFiftyItem : Item
+{
+    public FiftyFiftyItem()
+    {
+        ItemName = "50/50 Item";
+        Description = "Removes 2 incorrect options randomly.";
+    }
+
+    public override void Use(User player)
+    {
+        player.IsFiftyFiftyActive = true;
+    }
+}
+
+class DoublePointsItem : Item
+{
+    public DoublePointsItem()
+    {
+        ItemName = "Double Points";
+        Description = "Doubles the score won in this round.";
+    }
+
+    public override void Use(User player)
+    {
+        player.IsDoublePointsActive = true;
+    }
+}
+
+class HintItem : Item
+{
+    public HintItem()
+    {
+        ItemName = "Hint Item";
+        Description = "Provides a small hint about the logic gate.";
+    }
+
+    public override void Use(User player)
+    {
+        player.IsHintActive = true;
     }
 }
 
 // --- Program Class at the Bottom ---
 // This is where the main executed, like what we're learning in lecture
 
-class Program
+class GameController
 {
-    static void Main(string[] args)
+    private User player;
+    private List<Level> levels;
+    private Level currentLevel;
+
+    public void StartGame()
     {
         Console.Clear();
         RenderHeader();
 
         string name = AnsiConsole.Ask<string>("Enter your [green]Architect Name[/]:");
-        User player = new User(name);
+        player = new User(name);
 
-        List<Level> levels = InitializeLevels();
+        // Give player one of each item to start
+        player.AddItem(new FiftyFiftyItem());
+        player.AddItem(new DoublePointsItem());
+        player.AddItem(new HintItem());
 
-        while (player.CurrentLevelIndex < levels.Count && player.RemainingAttempts > 0)
+        levels = InitializeLevels();
+
+        ShowMenu();
+    }
+
+    public void ShowMenu()
+    {
+        while (!player.IsGameOver() && player.CurrentLevelIndex < levels.Count)
         {
-            Level currentLevel = levels[player.CurrentLevelIndex];
-            bool levelCleared = PlayLevel(player, currentLevel);
+            LoadLevel(player.CurrentLevelIndex);
+        }
+        EndGame();
+    }
 
-            if (levelCleared)
+    public void LoadLevel(int levelNumber)
+    {
+        currentLevel = levels[levelNumber];
+        bool levelCleared = PlayLevel(player, currentLevel);
+
+        if (levelCleared)
+        {
+            player.AddScore(100);
+            player.NextLevel();
+            AnsiConsole.MarkupLine($"[bold green]Success![/] Level {currentLevel.LevelNumber} complete. Score: {player.Score}");
+            if (player.CurrentLevelIndex < levels.Count)
             {
-                player.Score += 100;
-                player.CurrentLevelIndex++;
-                AnsiConsole.MarkupLine($"[bold green]Success![/] Level {currentLevel.LevelNumber} complete. Score: {player.Score}");
-                if (player.CurrentLevelIndex < levels.Count)
-                {
-                    AnsiConsole.MarkupLine("Press any key for the next level...");
-                    Console.ReadKey();
-                }
+                AnsiConsole.MarkupLine("Press any key for the next level...");
+                Console.ReadKey();
+            }
+        }
+        else
+        {
+            player.DecreaseAttempt();
+            AnsiConsole.MarkupLine($"[bold red]Incorrect![/] Attempts remaining: {player.RemainingAttempts}");
+            AnsiConsole.MarkupLine($"[yellow]Hint: {currentLevel.Hint}[/]");
+
+            if (player.IsGameOver())
+            {
+                AnsiConsole.MarkupLine("[bold darkred]GAME OVER.[/] Your logic failed you tonight.");
             }
             else
             {
-                player.RemainingAttempts--;
-                AnsiConsole.MarkupLine($"[bold red]Incorrect![/] Attempts remaining: {player.RemainingAttempts}");
-                AnsiConsole.MarkupLine($"[yellow]Hint: {currentLevel.Hint}[/]");
-                
-                if (player.RemainingAttempts <= 0)
-                {
-                    AnsiConsole.MarkupLine("[bold darkred]GAME OVER.[/] Your logic failed you tonight.");
-                    break;
-                }
-                else 
-                {
-                    AnsiConsole.MarkupLine("Press any key to retry...");
-                    Console.ReadKey();
-                }
+                AnsiConsole.MarkupLine("Press any key to retry...");
+                Console.ReadKey();
             }
         }
+    }
 
-        if (player.CurrentLevelIndex == levels.Count)
+    public void EndGame()
+    {
+        if (player.CurrentLevelIndex >= levels.Count)
         {
             AnsiConsole.Write(new FigletText("Congratulation!!").Color(Color.Gold1));
             AnsiConsole.MarkupLine($"[bold yellow]Congratulations, {player.Name}![/] You are a Master Logic Architect.");
@@ -186,25 +324,86 @@ class Program
         }
     }
 
-    static bool PlayLevel(User player, Level level)
+    private bool PlayLevel(User player, Level level)
     {
         AnsiConsole.Clear();
         RenderHeader();
         AnsiConsole.Write(new Rule($"[yellow]Level {level.LevelNumber}: Identify the Gate[/]").Justify(Justify.Left));
         AnsiConsole.MarkupLine($"[bold white]Target:[/][blue] Fill in the truth table for this unknown gate.[/]");
-        
+
         level.DisplayTruthTable();
 
-        string guess = AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title("Which logic gate produces this behavior?")
-                .PageSize(5)
-                .AddChoices(new[] { "AND", "OR", "XOR", "NAND", "NOR" }));
+        var availableGates = new List<string> { "AND", "OR", "XOR", "NAND", "NOR" };
 
-        return guess.Equals(level.GateName, StringComparison.OrdinalIgnoreCase);
+        while (true)
+        {
+            var menuChoices = new List<string>(availableGates);
+            if (player.Inventory.Count > 0)
+            {
+                menuChoices.Add("[yellow]Use Item[/]");
+            }
+
+            string selection = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Which logic gate produces this behavior?")
+                    .PageSize(10)
+                    .AddChoices(menuChoices));
+
+            if (selection == "[yellow]Use Item[/]")
+            {
+                var itemChoices = new List<string>();
+                foreach (var itm in player.Inventory)
+                {
+                    itemChoices.Add(itm.ItemName);
+                }
+                itemChoices.Add("Cancel");
+
+                string itemChoice = AnsiConsole.Prompt(
+                    new SelectionPrompt<string>()
+                    .Title("Choose an item to use:")
+                    .AddChoices(itemChoices));
+
+                if (itemChoice != "Cancel")
+                {
+                    Item selectedItem = player.Inventory.Find(i => i.ItemName == itemChoice);
+                    if (selectedItem != null)
+                    {
+                        player.UseItem(selectedItem);
+                        AnsiConsole.MarkupLine($"[green]Used {selectedItem.ItemName}![/]");
+
+                        if (player.IsFiftyFiftyActive)
+                        {
+                            var wrongGates = new List<string>(availableGates);
+                            wrongGates.Remove(level.GateName);
+
+                            Random rnd = new Random();
+                            int toRemove = Math.Min(2, wrongGates.Count - 1);
+                            for (int i = 0; i < toRemove; i++)
+                            {
+                                int idx = rnd.Next(wrongGates.Count);
+                                string wrongGate = wrongGates[idx];
+                                wrongGates.RemoveAt(idx);
+                                availableGates.Remove(wrongGate);
+                            }
+                            player.IsFiftyFiftyActive = false;
+                        }
+                        else if (player.IsHintActive)
+                        {
+                            AnsiConsole.MarkupLine($"[yellow]Hint:[/] {level.Hint}");
+                            player.IsHintActive = false;
+                        }
+                    }
+                }
+                continue;
+            }
+            else
+            {
+                return selection.Equals(level.GateName, StringComparison.OrdinalIgnoreCase);
+            }
+        }
     }
 
-    static void RenderHeader()
+    private void RenderHeader()
     {
         AnsiConsole.Write(new FigletText("Logic Gate").Color(Color.Blue));
         AnsiConsole.Write(new FigletText("Architect").Color(Color.Cyan1));
@@ -212,24 +411,33 @@ class Program
         Console.WriteLine();
     }
 
-    static List<Level> InitializeLevels()
+    private List<Level> InitializeLevels()
     {
         return new List<Level>
         {
-            new Level(1, "AND", new AndGate(), "Only outputs True if BOTH inputs are True.", 
-                new List<(bool, bool)> { (true, true), (true, false), (false, true), (false, false) }),
-            
-            new Level(2, "OR", new OrGate(), "Outputs True if AT LEAST ONE input is True.", 
+            new Level(1, "AND", new AndGate(), "Only outputs True if BOTH inputs are True.",
                 new List<(bool, bool)> { (true, true), (true, false), (false, true), (false, false) }),
 
-            new Level(3, "XOR", new XorGate(), "Outputs True if inputs are DIFFERENT.", 
+            new Level(2, "OR", new OrGate(), "Outputs True if AT LEAST ONE input is True.",
                 new List<(bool, bool)> { (true, true), (true, false), (false, true), (false, false) }),
 
-            new Level(4, "NAND", new NandGate(), "The inverse of AND. Only False when both are True.", 
+            new Level(3, "XOR", new XorGate(), "Outputs True if inputs are DIFFERENT.",
                 new List<(bool, bool)> { (true, true), (true, false), (false, true), (false, false) }),
 
-            new Level(5, "NOR", new NorGate(), "The inverse of OR. Only True when both are False", 
+            new Level(4, "NAND", new NandGate(), "The inverse of AND. Only False when both are True.",
+                new List<(bool, bool)> { (true, true), (true, false), (false, true), (false, false) }),
+
+            new Level(5, "NOR", new NorGate(), "The inverse of OR. Only True when both are False",
                 new List<(bool, bool)> { (true, true), (true, false), (false, true), (false, false) })
         };
+    }
+}
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        GameController controller = new GameController();
+        controller.StartGame();
     }
 }
