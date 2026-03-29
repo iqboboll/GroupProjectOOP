@@ -115,7 +115,12 @@ public class Level
 public class User
 {
     public string Name { get; set; }
-    public int Score { get; set; }
+    private int score; 
+    public int Score 
+    { 
+        get { return score; }
+        set { score = value; }
+    }   
     public int CurrentLevelIndex { get; set; }
     public int RemainingAttempts { get; set; }
 
@@ -138,8 +143,24 @@ class Program
         Console.Clear();
         RenderHeader();
 
+    User player;
+    try 
+    {   
         string name = AnsiConsole.Ask<string>("Enter your [green]Architect Name[/]:");
-        User player = new User(name);
+    
+        if (string.IsNullOrWhiteSpace(name)) 
+        {
+            throw new ArgumentException("Architect Name cannot be empty!");
+        }
+    
+        player = new User(name);
+    }
+    catch (Exception ex) 
+    {
+        AnsiConsole.MarkupLine($"[bold red]Initialization Error:[/] {ex.Message}");
+        AnsiConsole.MarkupLine("[yellow]Defaulting name to 'Guest Architect'...[/]");
+        player = new User("Guest Architect");
+    }
 
         List<Level> levels = InitializeLevels();
 
