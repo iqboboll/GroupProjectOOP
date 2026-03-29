@@ -1,119 +1,161 @@
 using System;
 using System.Collections.Generic;
-using System.Security;
 using Spectre.Console;
 
-// --- Supporting Classes at the Top ---
+// INTERFACE
+
+public interface IUsable
+{
+    void Use(User player);
+}
+
+// ABSTRACT BASE CLASSES
 
 public abstract class LogicGate
 {
     public abstract bool Evaluate(bool inputA, bool inputB);
 }
 
-// Starting of inheritance 
-
-public class AndGate : LogicGate
-{
-    public override bool Evaluate(bool inputA, bool inputB)
-    { 
-        return inputA && inputB;
-    }
-    public override string ToString()
-    {
-        return "AND";
-    }
-}
-
-public class OrGate : LogicGate
-{
-    public override bool Evaluate(bool inputA, bool inputB)
-    { 
-        return inputA || inputB;
-    }
-    public override string ToString()
-    {
-        return "OR";
-    }
-}
-
-public class XorGate : LogicGate
-{
-    public override bool Evaluate(bool inputA, bool inputB)
-    {
-        return inputA ^ inputB;
-    }
-    public override string ToString()
-    {
-        return "XOR";
-    }
-}
-
-public class NandGate : LogicGate
-{
-    public override bool Evaluate(bool inputA, bool inputB)
-    {
-        return !(inputA && inputB);
-    }
-    public override string ToString()
-    {
-        return "NAND";
-    }
-}
-
-public class NorGate : LogicGate
-{
-    public override bool Evaluate(bool inputA, bool inputB)
-    {
-        return !(inputA || inputB);
-    }
-    public override string ToString()
-    {
-        return "NOR";
-    }
-}
-
-// End of inheritance, start of class level
-// Interface requirement
-public interface IUsable
-{
-    void Use(User player);
-}
-
-// Abstract Class requirement
 public abstract class Item : IUsable
 {
     public string Name { get; protected set; }
-    public abstract void Use(User player); // Polymorphism: Overridden behavior
+    public string Description { get; protected set; }
+    public abstract void Use(User player); // POLYMORPHISM
+    
+    public override string ToString() 
+    { 
+        return Name; 
+    }
+}
+
+// LOGIC GATE INHERITANCE
+
+class AndGate : LogicGate 
+{ 
+    public override bool Evaluate(bool a, bool b) 
+    {
+        return a && b;
+    } 
     public override string ToString()
     {
-        return Name;
+        return "AND";
+    } 
+}
+
+class OrGate : LogicGate 
+{ 
+    public override bool Evaluate(bool a, bool b)
+    {
+        return a || b;
+    } 
+    public override string ToString() 
+    {
+        return "OR";
+    } 
+}
+
+class XorGate : LogicGate 
+{ 
+    public override bool Evaluate(bool a, bool b)
+    {
+        return a ^ b;
+    } 
+    public override string ToString()
+    {
+        return "XOR";
+    } 
+}
+
+class NandGate : LogicGate 
+{ 
+    public override bool Evaluate(bool a, bool b)
+    {
+        return !(a && b);
+    } 
+    public override string ToString()
+    {
+        return "NAND";
+    } 
+}
+
+class NorGate : LogicGate 
+{ 
+    public override bool Evaluate(bool a, bool b)
+    {
+        return !(a || b);
+    } 
+    public override string ToString() 
+    {
+        return "NOR";
+    } 
+}
+
+// ITEM INHERITANCE 
+
+class FiftyFiftyItem : Item
+{
+    public FiftyFiftyItem() 
+    { 
+        Name = "50/50 Item"; 
+        Description = "Removes 2 incorrect options randomly."; 
+    }
+    public override void Use(User player) // POLYMORPHISM
+    { 
+        player.IsFiftyFiftyActive = true; 
     }
 }
 
-// Item 1
-public class DoublePointsItem : Item 
+class DoublePointsItem : Item
 {
-    public DoublePointsItem()
-    {
-        Name = "Double Points";
+    public DoublePointsItem() 
+    { 
+        Name = "Double Points"; 
+        Description = "Doubles points for this round."; 
     }
-    public override void Use(User player) 
-    {
-        AnsiConsole.MarkupLine("[bold gold1]Double Points Activated![/] Your next success will be worth 200 points.");
+    public override void Use(User player) // POLYMORPHISM
+    { 
+        player.IsDoublePointsActive = true; 
     }
 }
 
-// Item 2
-public class LifeItem : Item
+class HintItem : Item
 {
-    public LifeItem()
-    {
-        Name = "Extra Life";
+    public HintItem() 
+    { 
+        Name = "Hint Item"; 
+        Description = "Provides a small hint about the logic gate."; 
     }
-    public override void Use(User player)
+    public override void Use(User player) // POLYMORPHISM
+    { 
+        player.IsHintActive = true; 
+    }
+}
+
+// CORE CLASSES
+
+public class User
+{
+    public string Name { get; set; }
+    private int score;
+    public int Score // ENCAPSULATION
+    { 
+        get { return score; }
+        set { score = value; }
+    }
+    public int CurrentLevelIndex { get; set; }
+    public int RemainingAttempts { get; set; }
+    public List<Item> Inventory { get; set; } = new List<Item>();
+
+    public bool IsFiftyFiftyActive { get; set; }
+    public bool IsDoublePointsActive { get; set; }
+    public bool IsHintActive { get; set; }
+
+    public User(string name)
     {
-        player.RemainingAttempts++;
-        AnsiConsole.MarkupLine("[green]Extra Life added![/]");
+        Name = name;
+        Score = 0;
+        CurrentLevelIndex = 0;
+        RemainingAttempts = 3;
     }
 }
 
@@ -127,11 +169,7 @@ public class Level
 
     public Level(int number, string name, LogicGate gate, string hint, List<(bool A, bool B)> testCases)
     {
-        LevelNumber = number;
-        GateName = name;
-        Gate = gate;
-        Hint = hint;
-        TestCases = testCases;
+        LevelNumber = number; GateName = name; Gate = gate; Hint = hint; TestCases = testCases;
     }
 
     public void DisplayTruthTable()
@@ -143,52 +181,123 @@ public class Level
 
         foreach (var test in TestCases)
         {
-            bool result = Gate.Evaluate(test.A, test.B);
+            bool res = Gate.Evaluate(test.A, test.B);
             table.AddRow(
-                test.A ? "[green]True[/]" : "[red]False[/]",
-                test.B ? "[green]True[/]" : "[red]False[/]",
-                result ? "[green]True[/]" : "[red]False[/]"
+                test.A ? "[green]True[/]" : "[red]False[/]", 
+                test.B ? "[green]True[/]" : "[red]False[/]", 
+                res ? "[green]True[/]" : "[red]False[/]"
             );
         }
         AnsiConsole.Write(table);
     }
 }
 
-// End of class level, start of user class
+// GAME CONTROLLER
 
-public class User
+class GameController
 {
-    public string Name { get; set; }
-    private int score; 
-    public int Score 
-    { 
-        get { return score; }
-        set { score = value; }
-    }   
-    public int CurrentLevelIndex { get; set; }
-    public int RemainingAttempts { get; set; }
+    private User player;
+    private List<Level> levels;
 
-    public List<Item> Inventory { get; set; } = new List<Item>();
-
-    public User(string name)
+    public void StartGame()
     {
-        Name = name;
-        Score = 0;
-        CurrentLevelIndex = 0;
-        RemainingAttempts = 3;
+        Console.Clear();
+        RenderHeader();
+
+        try
+        {
+            string name = AnsiConsole.Ask<string>("Enter your [green]Architect Name[/]:");
+
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("Name cannot be empty!");
+            }
+        
+            player = new User(name);
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}. Defaulting to 'Guest'.");
+            player = new User("Guest Architect");
+        }
+
+        levels = InitializeLevels();
+        player.Inventory.Add(new FiftyFiftyItem());
+        player.Inventory.Add(new DoublePointsItem());
+        player.Inventory.Add(new HintItem());
+
+        while (player.RemainingAttempts > 0 && player.CurrentLevelIndex < levels.Count)
+        {
+            PlayLevel(levels[player.CurrentLevelIndex]);
+        }
+        
+        EndGame();
     }
-}
 
-// --- Program Class at the Bottom ---
-// This is where the main executed, like what we're learning in lecture
-
-public class GameEngine
-{
-    public List<Level> Levels { get; private set; }
-
-    public GameEngine()
+    private void PlayLevel(Level level)
     {
-        Levels = InitializeLevels();
+        AnsiConsole.Clear();
+        RenderHeader();
+        AnsiConsole.Write(new Rule($"[yellow]Level {level.LevelNumber}[/]").Justify(Justify.Left));
+        level.DisplayTruthTable();
+
+        var choices = new List<string> { "AND", "OR", "XOR", "NAND", "NOR" };
+
+        if (player.Inventory.Count > 0 && AnsiConsole.Confirm("Would you like to use an item from your inventory?"))
+        {
+            var item = AnsiConsole.Prompt(new SelectionPrompt<Item>().Title("Pick an item:").AddChoices(player.Inventory));
+            item.Use(player);
+            player.Inventory.Remove(item);
+
+            if (player.IsFiftyFiftyActive)
+            {
+                AnsiConsole.MarkupLine("[bold yellow]50/50 Activated![/] Two incorrect gates have been removed.");
+                var wrong = choices.FindAll(c => c != level.GateName);
+                if (wrong.Count >= 2) { choices.Remove(wrong[0]); choices.Remove(wrong[1]); }
+                player.IsFiftyFiftyActive = false;
+            }
+            
+            if (player.IsDoublePointsActive)
+            {
+                AnsiConsole.MarkupLine("[bold gold1]Double Points Activated![/] Your success reward is now [green]200 points[/].");
+            }
+
+            if (player.IsHintActive)
+            {
+                AnsiConsole.MarkupLine($"[bold cyan]Hint Activated![/] Secret: [yellow]{level.Hint}[/]");
+                player.IsHintActive = false;
+            }
+            
+            Console.WriteLine("\nPress any key to continue to your choice...");
+            Console.ReadKey();
+        }
+
+        string guess = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Which logic gate is this?").AddChoices(choices));
+
+        if (guess.Equals(level.GateName, StringComparison.OrdinalIgnoreCase))
+        {
+            int gain = player.IsDoublePointsActive ? 200 : 100;
+            player.Score += gain;
+            player.IsDoublePointsActive = false;
+            player.CurrentLevelIndex++;
+            AnsiConsole.MarkupLine($"[green]Correct![/] Score: {player.Score}");
+            Console.ReadKey();
+        }
+        else
+        {
+            player.RemainingAttempts--;
+            player.IsDoublePointsActive = false;
+            AnsiConsole.MarkupLine($"[red]Wrong![/] Attempts left: {player.RemainingAttempts}");
+            Console.ReadKey();
+        }
+    }
+
+    private void EndGame()
+    {
+        if (player.RemainingAttempts > 0)
+            AnsiConsole.Write(new FigletText("Winner!").Color(Color.Gold1));
+        else
+            AnsiConsole.MarkupLine("[red]GAME OVER.[/]");
     }
 
     private void RenderHeader()
@@ -196,151 +305,28 @@ public class GameEngine
         AnsiConsole.Write(new FigletText("Logic Gate").Color(Color.Blue));
         AnsiConsole.Write(new FigletText("Architect").Color(Color.Cyan1));
         AnsiConsole.Write(new Rule("[grey]OOP Puzzle Challenge[/]").Justify(Justify.Left));
-        Console.WriteLine();
     }
 
     private List<Level> InitializeLevels()
     {
-        return new List<Level>
+        var fullCases = new List<(bool, bool)> { (true, true), (true, false), (false, true), (false, false) };
+
+        return new List<Level> 
         {
-            new Level(1, "AND", new AndGate(), "Only outputs True if BOTH inputs are True.", 
-                new List<(bool, bool)> { (true, true), (true, false), (false, true), (false, false) }),
-            
-            new Level(2, "OR", new OrGate(), "Outputs True if AT LEAST ONE input is True.", 
-                new List<(bool, bool)> { (true, true), (true, false), (false, true), (false, false) }),
-
-            new Level(3, "XOR", new XorGate(), "Outputs True if inputs are DIFFERENT.", 
-                new List<(bool, bool)> { (true, true), (true, false), (false, true), (false, false) }),
-
-            new Level(4, "NAND", new NandGate(), "The inverse of AND. Only False when both are True.", 
-                new List<(bool, bool)> { (true, true), (true, false), (false, true), (false, false) }),
-
-            new Level(5, "NOR", new NorGate(), "The inverse of OR. Only True when both are False", 
-                new List<(bool, bool)> { (true, true), (true, false), (false, true), (false, false) })
+            new Level(1, "AND", new AndGate(), "Only outputs True if BOTH inputs are True.", new List<(bool, bool)>(fullCases)),
+            new Level(2, "OR", new OrGate(), "Outputs True if AT LEAST ONE input is True.", new List<(bool, bool)>(fullCases)),
+            new Level(3, "XOR", new XorGate(), "Outputs True if inputs are DIFFERENT.", new List<(bool, bool)>(fullCases)),
+            new Level(4, "NAND", new NandGate(), "The inverse of AND. Only False when both are True.", new List<(bool, bool)>(fullCases)),
+            new Level(5, "NOR", new NorGate(), "The inverse of OR. Only True when both are False.", new List<(bool, bool)>(fullCases))
         };
-    }
-
-    public bool PlayLevel(User player, Level level, ref bool doublePointsActive)
-    {
-        AnsiConsole.Clear();
-        RenderHeader();
-        AnsiConsole.Write(new Rule($"[yellow]Level {level.LevelNumber}[/]").Justify(Justify.Left));
-        
-        level.DisplayTruthTable();
-
-        if (player.Inventory.Count > 0)
-        {
-            var useItem = AnsiConsole.Confirm("Would you like to use an item from your inventory?");
-            if (useItem)
-            {
-                var itemToUse = AnsiConsole.Prompt(
-                    new SelectionPrompt<Item>()
-                        .Title("Select an item:")
-                        .AddChoices(player.Inventory));
-
-                if (itemToUse is DoublePointsItem)
-                {
-                    doublePointsActive = true;
-                }
-                
-                itemToUse.Use(player);
-                player.Inventory.Remove(itemToUse);
-            }
-        }
-
-        string guess = AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title("Which logic gate is this?")
-                .AddChoices(new[] { "AND", "OR", "XOR", "NAND", "NOR" }));
-
-        return guess.Equals(level.GateName, StringComparison.OrdinalIgnoreCase);
     }
 }
 
 class Program
 {
-    static void Main(string[] args)
-    {
-        Console.Clear();
-        RenderHeader();
-
-        User player;
-        try 
-        {   
-            string name = AnsiConsole.Ask<string>("Enter your [green]Architect Name[/]:");
-            if (string.IsNullOrWhiteSpace(name)) 
-            {
-                throw new ArgumentException("Architect Name cannot be empty!");
-            }
-            player = new User(name);
-        }
-        catch (Exception ex) 
-        {
-            AnsiConsole.MarkupLine($"[bold red]Initialization Error:[/] {ex.Message}");
-            AnsiConsole.MarkupLine("[yellow]Defaulting name to 'Guest Architect'...[/]");
-            player = new User("Guest Architect");
-        }
-
-        GameEngine engine = new GameEngine();
-
-        player.Inventory.Add(new DoublePointsItem());
-        player.Inventory.Add(new LifeItem());
-        bool doublePointsActive = false;
-
-        while (player.CurrentLevelIndex < engine.Levels.Count && player.RemainingAttempts > 0)
-        {
-            Level currentLevel = engine.Levels[player.CurrentLevelIndex];
-            
-            bool levelCleared = engine.PlayLevel(player, currentLevel, ref doublePointsActive);
-
-            if (levelCleared)
-            {
-                int pointsEarned = doublePointsActive ? 200 : 100;
-                player.Score += pointsEarned;
-
-                doublePointsActive = false; 
-                player.CurrentLevelIndex++;
-
-                AnsiConsole.MarkupLine($"[bold green]Success![/] Level {currentLevel.LevelNumber} complete. Score: {player.Score}");
-                if (player.CurrentLevelIndex < engine.Levels.Count)
-                {
-                    AnsiConsole.MarkupLine("Press any key for the next level...");
-                    Console.ReadKey();
-                }
-            }
-            else
-            {
-                doublePointsActive = false;
-                player.RemainingAttempts--;
-                AnsiConsole.MarkupLine($"[bold red]Incorrect![/] Attempts remaining: {player.RemainingAttempts}");
-                AnsiConsole.MarkupLine($"[yellow]Hint: {currentLevel.Hint}[/]");
-                
-                if (player.RemainingAttempts <= 0)
-                {
-                    AnsiConsole.MarkupLine("[bold darkred]GAME OVER.[/] Your logic failed you tonight.");
-                    break;
-                }
-                else 
-                {
-                    AnsiConsole.MarkupLine("Press any key to retry...");
-                    Console.ReadKey();
-                }
-            }
-        }
-
-        if (player.CurrentLevelIndex == engine.Levels.Count)
-        {
-            AnsiConsole.Write(new FigletText("Congratulations!!").Color(Color.Gold1));
-            AnsiConsole.MarkupLine($"[bold yellow]Congratulations, {player.Name}![/] You are a Master Logic Architect.");
-            AnsiConsole.MarkupLine($"Final Score: [green]{player.Score}[/]");
-        }
-    }
-
-    static void RenderHeader()
-    {
-        AnsiConsole.Write(new FigletText("Logic Gate").Color(Color.Blue));
-        AnsiConsole.Write(new FigletText("Architect").Color(Color.Cyan1));
-        AnsiConsole.Write(new Rule("[grey]OOP Puzzle Challenge[/]").Justify(Justify.Left));
-        Console.WriteLine();
+    static void Main() 
+    { 
+        GameController controller = new GameController();
+        controller.StartGame();
     }
 }
