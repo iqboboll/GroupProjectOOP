@@ -263,7 +263,7 @@ class GameController
         Console.Clear();
         RenderHeader();
 
-        User player;
+        // EDIT: Removed the local variable 'User player;' here to avoid shadowing the main GameController 'player' field
         try
         {
             string name = AnsiConsole.Ask<string>("Enter your [green]Architect Name[/]:");
