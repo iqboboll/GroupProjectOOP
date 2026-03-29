@@ -196,6 +196,8 @@ class User
     }
 }
 
+//end of user class, start of item class
+
 abstract class Item
 {
     protected string itemName = "";
@@ -249,8 +251,7 @@ class HintItem : Item
     }
 }
 
-// --- Program Class at the Bottom ---
-// This is where the main executed, like what we're learning in lecture
+//end of item class, start of gamecontroller class
 
 class GameController
 {
@@ -453,6 +454,10 @@ class GameController
         };
     }
 }
+
+//end of gamecontroller class, start of program class
+// --- Program Class at the Bottom ---
+// This is where the main executed, like what we're learning in lecture
 
 class Program
 {
