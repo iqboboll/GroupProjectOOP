@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Security;
 using Spectre.Console;
 
 // --- Supporting Classes at the Top ---
@@ -72,6 +73,49 @@ public class NorGate : LogicGate
 }
 
 // End of inheritance, start of class level
+// Interface requirement
+public interface IUsable
+{
+    void Use(User player);
+}
+
+// Abstract Class requirement
+public abstract class Item : IUsable
+{
+    public string Name { get; protected set; }
+    public abstract void Use(User player); // Polymorphism: Overridden behavior
+    public override string ToString()
+    {
+        return Name;
+    }
+}
+
+// Item 1
+public class DoublePointsItem : Item 
+{
+    public DoublePointsItem()
+    {
+        Name = "Double Points";
+    }
+    public override void Use(User player) 
+    {
+        AnsiConsole.MarkupLine("[bold gold1]Double Points Activated![/] Your next success will be worth 200 points.");
+    }
+}
+
+// Item 2
+public class LifeItem : Item
+{
+    public LifeItem()
+    {
+        Name = "Extra Life";
+    }
+    public override void Use(User player)
+    {
+        player.RemainingAttempts++;
+        AnsiConsole.MarkupLine("[green]Extra Life added![/]");
+    }
+}
 
 public class Level
 {
@@ -110,7 +154,7 @@ public class Level
     }
 }
 
-//end of class level, start of user's class
+// End of class level, start of user class
 
 public class User
 {
@@ -124,6 +168,8 @@ public class User
     public int CurrentLevelIndex { get; set; }
     public int RemainingAttempts { get; set; }
 
+    public List<Item> Inventory { get; set; } = new List<Item>();
+
     public User(string name)
     {
         Name = name;
@@ -136,96 +182,16 @@ public class User
 // --- Program Class at the Bottom ---
 // This is where the main executed, like what we're learning in lecture
 
-class Program
+public class GameEngine
 {
-    static void Main(string[] args)
+    public List<Level> Levels { get; private set; }
+
+    public GameEngine()
     {
-        Console.Clear();
-        RenderHeader();
-
-    User player;
-    try 
-    {   
-        string name = AnsiConsole.Ask<string>("Enter your [green]Architect Name[/]:");
-    
-        if (string.IsNullOrWhiteSpace(name)) 
-        {
-            throw new ArgumentException("Architect Name cannot be empty!");
-        }
-    
-        player = new User(name);
-    }
-    catch (Exception ex) 
-    {
-        AnsiConsole.MarkupLine($"[bold red]Initialization Error:[/] {ex.Message}");
-        AnsiConsole.MarkupLine("[yellow]Defaulting name to 'Guest Architect'...[/]");
-        player = new User("Guest Architect");
+        Levels = InitializeLevels();
     }
 
-        List<Level> levels = InitializeLevels();
-
-        while (player.CurrentLevelIndex < levels.Count && player.RemainingAttempts > 0)
-        {
-            Level currentLevel = levels[player.CurrentLevelIndex];
-            bool levelCleared = PlayLevel(player, currentLevel);
-
-            if (levelCleared)
-            {
-                player.Score += 100;
-                player.CurrentLevelIndex++;
-                AnsiConsole.MarkupLine($"[bold green]Success![/] Level {currentLevel.LevelNumber} complete. Score: {player.Score}");
-                if (player.CurrentLevelIndex < levels.Count)
-                {
-                    AnsiConsole.MarkupLine("Press any key for the next level...");
-                    Console.ReadKey();
-                }
-            }
-            else
-            {
-                player.RemainingAttempts--;
-                AnsiConsole.MarkupLine($"[bold red]Incorrect![/] Attempts remaining: {player.RemainingAttempts}");
-                AnsiConsole.MarkupLine($"[yellow]Hint: {currentLevel.Hint}[/]");
-                
-                if (player.RemainingAttempts <= 0)
-                {
-                    AnsiConsole.MarkupLine("[bold darkred]GAME OVER.[/] Your logic failed you tonight.");
-                    break;
-                }
-                else 
-                {
-                    AnsiConsole.MarkupLine("Press any key to retry...");
-                    Console.ReadKey();
-                }
-            }
-        }
-
-        if (player.CurrentLevelIndex == levels.Count)
-        {
-            AnsiConsole.Write(new FigletText("Congratulation!!").Color(Color.Gold1));
-            AnsiConsole.MarkupLine($"[bold yellow]Congratulations, {player.Name}![/] You are a Master Logic Architect.");
-            AnsiConsole.MarkupLine($"Final Score: [green]{player.Score}[/]");
-        }
-    }
-
-    static bool PlayLevel(User player, Level level)
-    {
-        AnsiConsole.Clear();
-        RenderHeader();
-        AnsiConsole.Write(new Rule($"[yellow]Level {level.LevelNumber}: Identify the Gate[/]").Justify(Justify.Left));
-        AnsiConsole.MarkupLine($"[bold white]Target:[/][blue] Fill in the truth table for this unknown gate.[/]");
-        
-        level.DisplayTruthTable();
-
-        string guess = AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title("Which logic gate produces this behavior?")
-                .PageSize(5)
-                .AddChoices(new[] { "AND", "OR", "XOR", "NAND", "NOR" }));
-
-        return guess.Equals(level.GateName, StringComparison.OrdinalIgnoreCase);
-    }
-
-    static void RenderHeader()
+    private void RenderHeader()
     {
         AnsiConsole.Write(new FigletText("Logic Gate").Color(Color.Blue));
         AnsiConsole.Write(new FigletText("Architect").Color(Color.Cyan1));
@@ -233,7 +199,7 @@ class Program
         Console.WriteLine();
     }
 
-    static List<Level> InitializeLevels()
+    private List<Level> InitializeLevels()
     {
         return new List<Level>
         {
@@ -252,5 +218,129 @@ class Program
             new Level(5, "NOR", new NorGate(), "The inverse of OR. Only True when both are False", 
                 new List<(bool, bool)> { (true, true), (true, false), (false, true), (false, false) })
         };
+    }
+
+    public bool PlayLevel(User player, Level level, ref bool doublePointsActive)
+    {
+        AnsiConsole.Clear();
+        RenderHeader();
+        AnsiConsole.Write(new Rule($"[yellow]Level {level.LevelNumber}[/]").Justify(Justify.Left));
+        
+        level.DisplayTruthTable();
+
+        if (player.Inventory.Count > 0)
+        {
+            var useItem = AnsiConsole.Confirm("Would you like to use an item from your inventory?");
+            if (useItem)
+            {
+                var itemToUse = AnsiConsole.Prompt(
+                    new SelectionPrompt<Item>()
+                        .Title("Select an item:")
+                        .AddChoices(player.Inventory));
+
+                if (itemToUse is DoublePointsItem)
+                {
+                    doublePointsActive = true;
+                }
+                
+                itemToUse.Use(player);
+                player.Inventory.Remove(itemToUse);
+            }
+        }
+
+        string guess = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Which logic gate is this?")
+                .AddChoices(new[] { "AND", "OR", "XOR", "NAND", "NOR" }));
+
+        return guess.Equals(level.GateName, StringComparison.OrdinalIgnoreCase);
+    }
+}
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        Console.Clear();
+        RenderHeader();
+
+        User player;
+        try 
+        {   
+            string name = AnsiConsole.Ask<string>("Enter your [green]Architect Name[/]:");
+            if (string.IsNullOrWhiteSpace(name)) 
+            {
+                throw new ArgumentException("Architect Name cannot be empty!");
+            }
+            player = new User(name);
+        }
+        catch (Exception ex) 
+        {
+            AnsiConsole.MarkupLine($"[bold red]Initialization Error:[/] {ex.Message}");
+            AnsiConsole.MarkupLine("[yellow]Defaulting name to 'Guest Architect'...[/]");
+            player = new User("Guest Architect");
+        }
+
+        GameEngine engine = new GameEngine();
+
+        player.Inventory.Add(new DoublePointsItem());
+        player.Inventory.Add(new LifeItem());
+        bool doublePointsActive = false;
+
+        while (player.CurrentLevelIndex < engine.Levels.Count && player.RemainingAttempts > 0)
+        {
+            Level currentLevel = engine.Levels[player.CurrentLevelIndex];
+            
+            bool levelCleared = engine.PlayLevel(player, currentLevel, ref doublePointsActive);
+
+            if (levelCleared)
+            {
+                int pointsEarned = doublePointsActive ? 200 : 100;
+                player.Score += pointsEarned;
+
+                doublePointsActive = false; 
+                player.CurrentLevelIndex++;
+
+                AnsiConsole.MarkupLine($"[bold green]Success![/] Level {currentLevel.LevelNumber} complete. Score: {player.Score}");
+                if (player.CurrentLevelIndex < engine.Levels.Count)
+                {
+                    AnsiConsole.MarkupLine("Press any key for the next level...");
+                    Console.ReadKey();
+                }
+            }
+            else
+            {
+                doublePointsActive = false;
+                player.RemainingAttempts--;
+                AnsiConsole.MarkupLine($"[bold red]Incorrect![/] Attempts remaining: {player.RemainingAttempts}");
+                AnsiConsole.MarkupLine($"[yellow]Hint: {currentLevel.Hint}[/]");
+                
+                if (player.RemainingAttempts <= 0)
+                {
+                    AnsiConsole.MarkupLine("[bold darkred]GAME OVER.[/] Your logic failed you tonight.");
+                    break;
+                }
+                else 
+                {
+                    AnsiConsole.MarkupLine("Press any key to retry...");
+                    Console.ReadKey();
+                }
+            }
+        }
+
+        if (player.CurrentLevelIndex == engine.Levels.Count)
+        {
+            AnsiConsole.Write(new FigletText("Congratulations!!").Color(Color.Gold1));
+            AnsiConsole.MarkupLine($"[bold yellow]Congratulations, {player.Name}![/] You are a Master Logic Architect.");
+            AnsiConsole.MarkupLine($"Final Score: [green]{player.Score}[/]");
+        }
+    }
+
+    static void RenderHeader()
+    {
+        AnsiConsole.Write(new FigletText("Logic Gate").Color(Color.Blue));
+        AnsiConsole.Write(new FigletText("Architect").Color(Color.Cyan1));
+        AnsiConsole.Write(new Rule("[grey]OOP Puzzle Challenge[/]").Justify(Justify.Left));
+        Console.WriteLine();
     }
 }
