@@ -136,7 +136,12 @@ class Level
 class User
 {
     public string Name { get; set; }
-    public int Score { get; set; }
+    private int score;
+    public int Score
+    {
+        get { return score; }
+        set { score = value; }
+    }
     public int CurrentLevelIndex { get; set; }
     public int RemainingAttempts { get; set; }
     public List<Item> Inventory { get; set; }
@@ -258,8 +263,24 @@ class GameController
         Console.Clear();
         RenderHeader();
 
-        string name = AnsiConsole.Ask<string>("Enter your [green]Architect Name[/]:");
-        player = new User(name);
+        User player;
+        try
+        {
+            string name = AnsiConsole.Ask<string>("Enter your [green]Architect Name[/]:");
+
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("Architect Name cannot be empty!");
+            }
+
+            player = new User(name);
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"[bold red]Initialization Error:[/] {ex.Message}");
+            AnsiConsole.MarkupLine("[yellow]Defaulting name to 'Guest Architect'...[/]");
+            player = new User("Guest Architect");
+        }
 
         // Give player one of each item to start
         player.AddItem(new FiftyFiftyItem());
