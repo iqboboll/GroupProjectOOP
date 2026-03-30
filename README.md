@@ -6,16 +6,16 @@
 
 ## Group Members
 
-| No. | Name | Student ID |
-|-----|------|------------|
-| 1   |      |            |
-| 2   |      |            |
-| 3   |      |            |
-| 4   |      |            |
-| 5   |      |            |
-| 6   |      |            |
-| 7   |      |            |
-| 8   |      |            |
+| No. |                   Name                     | Student ID |
+|-----|--------------------------------------------|------------|
+| 1   | Muhammad Airil Asyraff Bin Zulkifli        |  25009515  |
+| 2   | Muhammad Iqbal bin Abdul Razak             |  25006561  |
+| 3   | Isma Yasmin Binti Ramli                    |  24005367  |
+| 4   | Nursyazwani Binti Zulkufli                 |  24005408  |
+| 5   | Zarifah Izzati Binti Zaini                 |  24005368  |
+| 6   | Nurul Ieman Binti Abdullah                 |  24005565  |
+| 7   | Argya Muhammad Raifan                      |  25005723  |
+| 8   | Sharifah Syazwahida Binti Syd Roselan      |  24005605  |
 
 ---
 
