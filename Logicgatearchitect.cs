@@ -20,7 +20,7 @@ public abstract class Item : IUsable
 {
     public string Name { get; protected set; }
     public string Description { get; protected set; }
-    public abstract void Use(User player); // POLYMORPHISM
+    public abstract void Use(User player); 
     
     public override string ToString() 
     { 
@@ -99,7 +99,7 @@ class FiftyFiftyItem : Item
         Name = "50/50 Item"; 
         Description = "Removes 2 incorrect options randomly."; 
     }
-    public override void Use(User player) // POLYMORPHISM
+    public override void Use(User player) 
     { 
         player.IsFiftyFiftyActive = true; 
     }
@@ -112,7 +112,7 @@ class DoublePointsItem : Item
         Name = "Double Points"; 
         Description = "Doubles points for this round."; 
     }
-    public override void Use(User player) // POLYMORPHISM
+    public override void Use(User player) 
     { 
         player.IsDoublePointsActive = true; 
     }
@@ -125,7 +125,7 @@ class HintItem : Item
         Name = "Hint Item"; 
         Description = "Provides a small hint about the logic gate."; 
     }
-    public override void Use(User player) // POLYMORPHISM
+    public override void Use(User player) 
     { 
         player.IsHintActive = true; 
     }
