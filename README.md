@@ -21,9 +21,9 @@
 
 ## Project Description
 
-The **Logic Gate Architect** is an interactive logic puzzle that tests a player's knowledge of digital circuitry through a series of increasingly difficult levels. Upon starting, the player takes on the role of an "Architect" and is presented with a truth table — a list showing how a mystery gate reacts to different combinations of `True` and `False` inputs. The player's goal is to analyze these patterns and correctly identify the gate from a list of options, such as AND, OR, XOR, NAND, or NOR. Each correct identification earns the player **100 points** and advances them to the next stage of the challenge.
+The **Logic Gate Architect** is an interactive logic puzzle that tests a player's knowledge of digital circuitry through a series of increasingly difficult levels. Upon starting, the player takes on the role of an "Architect" and is presented with a truth table, showing how a gate reacts to different combinations of `True` and `False` inputs. The player's goal is to analyze these patterns and correctly identify the gate from a list of options, such as AND, OR, XOR, NAND, or NOR. Each correct identification earns the player **100 points** and advances them to the next stage of the challenge.
 
-To win the game, the player must successfully navigate through all five levels of the architectural challenge. However, the system enforces a strict penalty for incorrect deductions: players start with a limited pool of **three attempts**. If an incorrect guess is made, the player loses an attempt and is provided with a helpful hint to guide their next try. If the player's attempts are exhausted before all levels are cleared, the system triggers a **"Game Over"** state. Conversely, completing the final level rewards the player with a **"Master Logic Architect"** title and a summary of their final score.
+To win the game, the player must successfully navigate through all five levels of the architectural challenge. However, the system enforces a strict penalty for incorrect deductions: players start with a limited pool of **three attempts**. For each level, a truth table is displayed, and the player is given the opportunity to use an item from their inventory to gain a strategic advantage. After the optional item phase, the player must select a logic gate guess. A correct identification earns the player points and advances them to the next level. Conversely, an incorrect guess results in the deduction of one attempt. The game concludes in one of two states: a **"Winner"** message is displayed if all levels are successfully cleared, or a **"Game Over"** message appears if the player exhausts all three attempts.
 
 ---
 
@@ -39,7 +39,7 @@ To win the game, the player must successfully navigate through all five levels o
 | 50/50 Item | Removes 2 incorrect options from the answer choices |
 | Double Points Item | Doubles the point reward for the current round |
 | Hint Item | Reveals a contextual clue about the current logic gate |
-| Win/Lose Conditions | Completing all levels grants the "Master Logic Architect" title; losing all attempts triggers Game Over |
+| Win/Lose Conditions | Completing all levels grants the "Winner" title; losing all attempts triggers Game Over |
 
 ---
 
